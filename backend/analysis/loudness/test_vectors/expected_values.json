@@ -1,0 +1,92 @@
+{
+  "sine_440hz.wav": {
+    "integrated_lufs": -3.74,
+    "loudness_range_lu": 2.56,
+    "true_peak_dbfs": 0.01,
+    "description": "Full-scale 440 Hz sine wave (K-weighted LUFS includes ~0.7 dB attenuation at 440 Hz)"
+  },
+  "sine_1khz_stereo.wav": {
+    "integrated_lufs": -0.03,
+    "loudness_range_lu": 2.56,
+    "true_peak_dbfs": 0.01,
+    "description": "Full-scale 1 kHz stereo sine wave (metered as stereo per BS.1770-4; two-channel sum gives ~3 dB higher LUFS than mono)"
+  },
+  "white_noise.wav": {
+    "integrated_lufs": -16.9,
+    "loudness_range_lu": 2.19,
+    "true_peak_dbfs": -5.5,
+    "description": "White noise at -20 dBFS RMS (K-weighting boosts HF energy; true peak well above RMS)"
+  },
+  "silence.wav": {
+    "integrated_lufs": null,
+    "loudness_range_lu": null,
+    "true_peak_dbfs": -120.0,
+    "description": "Digital silence (LUFS and LRA undefined)"
+  },
+  "pink_noise.wav": {
+    "integrated_lufs": -19.83,
+    "loudness_range_lu": 2.12,
+    "true_peak_dbfs": -5.41,
+    "description": "Pink noise at -18 dBFS RMS (1/f spectrum; K-weighting effect differs from white noise)"
+  },
+  "ebu_r128_tone_stereo_23lufs.wav": {
+    "integrated_lufs": -23.0,
+    "loudness_range_lu": 1.0,
+    "true_peak_dbfs": -22.96,
+    "description": "EBU Tech 3341 Sec 6.1: Stereo 1 kHz sine at -23 LUFS (EBU R128 reference level). ffmpeg-certified: I=-23.0 LUFS, LRA=0.0 LU, TP=-23.0 dBFS. LUFS and TP match within tolerance; LRA=1.0 is a known pyloudnorm minimum for constant signals (ffmpeg/libebur128 reports 0.0)."
+  },
+  "ebu_r128_tone_stereo_33lufs.wav": {
+    "integrated_lufs": -33.0,
+    "loudness_range_lu": 1.0,
+    "true_peak_dbfs": -32.95,
+    "description": "EBU Tech 3341 Sec 6.2: Stereo 1 kHz sine at -33 LUFS (10 dB below reference, tests metering linearity). ffmpeg-certified: I=-33.0 LUFS, LRA=0.0 LU, TP=-33.0 dBFS. LUFS and TP match within tolerance."
+  },
+  "ebu_r128_tone_mono_23lufs.wav": {
+    "integrated_lufs": -23.0,
+    "loudness_range_lu": 1.0,
+    "true_peak_dbfs": -19.95,
+    "description": "BS.1770-4 mono reference: Mono 1 kHz sine at -23 LUFS. Verifies mono channel handling per BS.1770-4. ffmpeg-certified: I=-23.0 LUFS, LRA=0.0 LU, TP=-20.0 dBFS. Higher TP than stereo because mono requires higher amplitude for same LUFS."
+  },
+  "ebu_r128_tone_with_silence.wav": {
+    "integrated_lufs": -23.07,
+    "loudness_range_lu": 4.4,
+    "true_peak_dbfs": -22.96,
+    "description": "EBU Tech 3341 Sec 7: Stereo 1 kHz at -23 LUFS for 10s + 10s silence. Tests BS.1770-4 absolute gating (silence excluded). ffmpeg-certified: I=-23.0 LUFS, LRA=4.8 LU, TP=-23.0 dBFS. LUFS matches within 0.07 LU; LRA deviation (4.4 vs 4.8) reflects pyloudnorm gating window differences."
+  },
+  "ebu_r128_two_tones.wav": {
+    "integrated_lufs": -23.06,
+    "loudness_range_lu": 13.0,
+    "true_peak_dbfs": -22.96,
+    "description": "EBU Tech 3341 Sec 8: Two-tone relative gate test. 10s at -36 LUFS then 10s at -23 LUFS. Tests BS.1770-4 relative threshold gating. ffmpeg-certified: I=-23.0 LUFS, LRA=13.0 LU, TP=-23.0 dBFS. LUFS within 0.06 LU; LRA exact match; relative gate correctly excludes quiet segment."
+  },
+  "ebu_r128_stereo_997hz_23lufs.wav": {
+    "integrated_lufs": -23.0,
+    "loudness_range_lu": 0.0,
+    "true_peak_dbfs": -22.95,
+    "description": "EBU Tech 3341 Seq 1: Stereo 997 Hz sine calibrated to -23.0 LUFS (EBU R128 target level). 997 Hz per ITU-R recommendation (K-weighting near-unity). 20s, 48 kHz, 16-bit. Certified: I=-23.0 LUFS +/-0.1 LU."
+  },
+  "ebu_r128_stereo_997hz_33lufs.wav": {
+    "integrated_lufs": -33.0,
+    "loudness_range_lu": 0.0,
+    "true_peak_dbfs": -32.94,
+    "description": "EBU Tech 3341 Seq 2: Stereo 997 Hz sine calibrated to -33.0 LUFS (10 dB below reference, tests metering linearity). 20s, 48 kHz, 16-bit. Certified: I=-33.0 LUFS +/-0.1 LU."
+  },
+  "ebu_r128_mono_997hz_23lufs.wav": {
+    "integrated_lufs": -23.0,
+    "loudness_range_lu": 0.0,
+    "true_peak_dbfs": -19.94,
+    "description": "ITU-R BS.1770-4 mono reference: 997 Hz sine calibrated to -23.0 LUFS. Verifies single-channel loudness per BS.1770-4. Higher true peak than stereo because mono requires greater amplitude for the same LUFS. 20s, 48 kHz, 16-bit. Certified: I=-23.0 LUFS +/-0.1 LU."
+  },
+  "ebu_r128_gate_test.wav": {
+    "integrated_lufs": -23.0,
+    "loudness_range_lu": 3.79,
+    "true_peak_dbfs": -22.95,
+    "description": "EBU Tech 3341 absolute gating test: 10s digital silence followed by 10s stereo 997 Hz tone at -23.0 LUFS. Silence falls below the -70 LUFS absolute gate and must be excluded from integrated measurement. Certified: I=-23.0 LUFS +/-0.1 LU after gating."
+  },
+  "ebu_r128_lra_test.wav": {
+    "integrated_lufs": -22.6,
+    "loudness_range_lu": 10.0,
+    "true_peak_dbfs": -19.95,
+    "description": "EBU Tech 3342 Loudness Range test: alternating stereo 997 Hz segments at -20 LUFS and -30 LUFS, 5s each, 6 repetitions (60s total). LRA equals the 95th-to-10th percentile span of short-term loudness. Certified: LRA=10.0 LU +/-0.2 LU. Integrated LUFS is the power-weighted mean of -20/-30 LUFS."
+  }
+}
