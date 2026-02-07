@@ -11,9 +11,9 @@ type ConnectionState = 'connecting' | 'ready' | 'error';
 declare global {
   interface Window {
     electron: {
-      getBackendPort: () => Promise<number>;
+      getBackendPort: () => Promise<number | null>;
       selectFile: () => Promise<string | null>;
-      restartBackend: () => Promise<number>;
+      restartBackend: () => Promise<number | null>;
     };
   }
 }
@@ -60,6 +60,11 @@ const App: React.FC = () => {
   const handleRetry = async () => {
     try {
       const newPort = await window.electron.restartBackend();
+      if (newPort === null) {
+        setConnectionState('error');
+        setErrorMessage('Backend failed to restart. No port was assigned.');
+        return;
+      }
       console.log(`[App] Backend restarted on port ${newPort}`);
       await connectToBackend();
     } catch (err) {

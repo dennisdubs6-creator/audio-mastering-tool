@@ -110,12 +110,12 @@ export class AudioAnalysisAPI {
       }
       if (settings.referenceId) formData.append('reference_id', settings.referenceId);
 
-      const response = await this.client.post<{ analysis_id: string }>('/api/analyze', formData, {
+      const response = await this.client.post<{ id: string }>('/api/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 120000,
       });
 
-      return response.data.analysis_id;
+      return response.data.id;
     } catch (err) {
       throw this.handleError(err);
     }
