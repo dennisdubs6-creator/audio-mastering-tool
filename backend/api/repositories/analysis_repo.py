@@ -1,32 +1,116 @@
+"""
+Repository for Analysis-related data access.
+
+Extends ``BaseRepository`` with methods that eagerly load associated
+band metrics, overall metrics, and recommendations.
+"""
+
+import logging
 from typing import Sequence
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import Session, joinedload
 
-from api.models import Analysis
+from api.models import Analysis, BandMetrics, OverallMetrics
 from api.repositories.base import BaseRepository
+
+logger = logging.getLogger(__name__)
 
 
 class AnalysisRepository(BaseRepository[Analysis]):
-    def __init__(self, session: AsyncSession) -> None:
+    """Data-access layer for the ``analysis`` table and its children.
+
+    Args:
+        session: An active SQLAlchemy ``Session``.
+    """
+
+    def __init__(self, session: Session) -> None:
         super().__init__(session, Analysis)
 
-    async def get_with_relations(self, analysis_id: int) -> Analysis | None:
+    def get_with_metrics(self, analysis_id: str) -> Analysis | None:
+        """Fetch an analysis with its band_metrics and overall_metrics eagerly loaded.
+
+        Args:
+            analysis_id: UUID string of the analysis.
+
+        Returns:
+            The ``Analysis`` instance with relationships populated, or ``None``.
+        """
         stmt = (
             select(Analysis)
             .where(Analysis.id == analysis_id)
             .options(
-                selectinload(Analysis.per_band_metrics),
-                selectinload(Analysis.detailed_metrics),
-                selectinload(Analysis.reference_matches),
-                selectinload(Analysis.recommendations),
+                joinedload(Analysis.band_metrics),
+                joinedload(Analysis.overall_metrics),
             )
         )
-        result = await self._session.execute(stmt)
-        return result.scalar_one_or_none()
+        result = self._session.execute(stmt)
+        return result.unique().scalar_one_or_none()
 
-    async def get_by_genre(self, genre: str) -> Sequence[Analysis]:
+    def get_with_recommendations(self, analysis_id: str) -> Analysis | None:
+        """Fetch an analysis with its recommendations eagerly loaded.
+
+        Args:
+            analysis_id: UUID string of the analysis.
+
+        Returns:
+            The ``Analysis`` instance with recommendations populated, or ``None``.
+        """
+        stmt = (
+            select(Analysis)
+            .where(Analysis.id == analysis_id)
+            .options(joinedload(Analysis.recommendations))
+        )
+        result = self._session.execute(stmt)
+        return result.unique().scalar_one_or_none()
+
+    def save_complete_analysis(
+        self,
+        analysis: Analysis,
+        band_metrics: list[BandMetrics],
+        overall_metrics: OverallMetrics,
+    ) -> Analysis:
+        """Persist an analysis together with its metrics in a single transaction.
+
+        Args:
+            analysis: The parent ``Analysis`` instance.
+            band_metrics: List of ``BandMetrics`` rows to associate.
+            overall_metrics: The ``OverallMetrics`` row to associate.
+
+        Returns:
+            The saved ``Analysis`` with children attached.
+        """
+        self._session.add(analysis)
+        self._session.flush()
+
+        for bm in band_metrics:
+            bm.analysis_id = analysis.id
+            self._session.add(bm)
+
+        overall_metrics.analysis_id = analysis.id
+        self._session.add(overall_metrics)
+
+        self._session.flush()
+        self._session.refresh(analysis)
+        logger.info("Saved complete analysis id=%s with %d band metrics", analysis.id, len(band_metrics))
+        return analysis
+
+    def get_by_genre(self, genre: str) -> Sequence[Analysis]:
+        """Return all analyses matching the given genre.
+
+        Args:
+            genre: Genre string to filter on.
+        """
         stmt = select(Analysis).where(Analysis.genre == genre)
-        result = await self._session.execute(stmt)
+        result = self._session.execute(stmt)
+        return result.scalars().all()
+
+    def get_recent(self, limit: int = 10) -> Sequence[Analysis]:
+        """Return the most recent analyses ordered by creation date.
+
+        Args:
+            limit: Maximum number of results (default 10).
+        """
+        stmt = select(Analysis).order_by(Analysis.created_at.desc()).limit(limit)
+        result = self._session.execute(stmt)
         return result.scalars().all()

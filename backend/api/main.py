@@ -1,20 +1,29 @@
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+"""
+FastAPI application entry point.
+
+Creates the app instance, configures CORS middleware, and wires up the
+lifespan event to initialise the database and logging on startup.
+"""
+
+import logging
+from contextlib import contextmanager
+from typing import Generator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
 
 from api.core.logging import setup_logging
 from api.database import init_db
 from api.routers import health, analyze, references
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+@contextmanager
+def lifespan(app: FastAPI) -> Generator[None, None, None]:
+    """Application lifespan: setup on enter, teardown on exit."""
     setup_logging()
+    logger = logging.getLogger(__name__)
     logger.info("Starting Audio Mastering Tool API")
-    await init_db()
+    init_db()
     logger.info("Database initialized")
     yield
     logger.info("Shutting down Audio Mastering Tool API")

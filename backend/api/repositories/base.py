@@ -1,31 +1,82 @@
-from typing import Generic, TypeVar, Type, Sequence
+"""
+Generic base repository providing synchronous CRUD operations.
+
+All concrete repositories extend ``BaseRepository[ModelT]`` to inherit
+``get_by_id``, ``get_all``, ``create``, ``update``, and ``delete``.
+"""
+
+import logging
+from typing import Generic, Sequence, Type, TypeVar
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from api.models import Base
 
 ModelT = TypeVar("ModelT", bound=Base)
+logger = logging.getLogger(__name__)
 
 
 class BaseRepository(Generic[ModelT]):
-    def __init__(self, session: AsyncSession, model: Type[ModelT]) -> None:
+    """Synchronous generic repository for SQLAlchemy models.
+
+    Args:
+        session: An active SQLAlchemy ``Session``.
+        model: The ORM model class this repository manages.
+    """
+
+    def __init__(self, session: Session, model: Type[ModelT]) -> None:
         self._session = session
         self._model = model
 
-    async def get_by_id(self, entity_id: int) -> ModelT | None:
-        return await self._session.get(self._model, entity_id)
+    def get_by_id(self, entity_id: str) -> ModelT | None:
+        """Return a single entity by its primary key, or ``None``.
 
-    async def get_all(self) -> Sequence[ModelT]:
-        result = await self._session.execute(select(self._model))
+        Args:
+            entity_id: UUID string primary key.
+        """
+        return self._session.get(self._model, entity_id)
+
+    def get_all(self) -> Sequence[ModelT]:
+        """Return every row for the managed model."""
+        result = self._session.execute(select(self._model))
         return result.scalars().all()
 
-    async def create(self, entity: ModelT) -> ModelT:
+    def create(self, entity: ModelT) -> ModelT:
+        """Add a new entity to the session and flush to obtain defaults.
+
+        Args:
+            entity: A model instance (unsaved).
+
+        Returns:
+            The same instance after flush, with server-side defaults populated.
+        """
         self._session.add(entity)
-        await self._session.flush()
-        await self._session.refresh(entity)
+        self._session.flush()
+        self._session.refresh(entity)
+        logger.debug("Created %s id=%s", self._model.__tablename__, getattr(entity, "id", "?"))
         return entity
 
-    async def delete(self, entity: ModelT) -> None:
-        await self._session.delete(entity)
-        await self._session.flush()
+    def update(self, entity: ModelT) -> ModelT:
+        """Merge changes for an existing entity and flush.
+
+        Args:
+            entity: A model instance with updated attributes.
+
+        Returns:
+            The merged instance.
+        """
+        merged = self._session.merge(entity)
+        self._session.flush()
+        logger.debug("Updated %s id=%s", self._model.__tablename__, getattr(merged, "id", "?"))
+        return merged
+
+    def delete(self, entity: ModelT) -> None:
+        """Remove an entity from the database.
+
+        Args:
+            entity: The model instance to delete.
+        """
+        self._session.delete(entity)
+        self._session.flush()
+        logger.debug("Deleted %s id=%s", self._model.__tablename__, getattr(entity, "id", "?"))
