@@ -1,9 +1,10 @@
 export interface ProgressMessage {
-  type: 'progress' | 'complete' | 'error';
-  progress: number;
-  step?: string;
+  type: 'band_progress' | 'complete' | 'error';
+  band?: string;
+  progress?: number;
+  status?: string;
   message?: string;
-  error?: string;
+  analysis_id?: string;
 }
 
 export type ProgressCallback = (message: ProgressMessage) => void;
@@ -63,7 +64,9 @@ export class ProgressWebSocket {
       this.ws.onmessage = (event: MessageEvent) => {
         try {
           const message: ProgressMessage = JSON.parse(event.data);
-          console.log(`[WebSocket] Progress: ${message.progress}% - ${message.step || ''}`);
+          console.log(
+            `[WebSocket] ${message.type}: ${message.progress ?? ''}% - ${message.band || ''}`
+          );
           this.onProgressCallback?.(message);
         } catch (err) {
           console.error('[WebSocket] Failed to parse message:', err);

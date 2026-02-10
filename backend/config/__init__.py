@@ -3,6 +3,7 @@ from config.constants import (
     BAND_NAMES,
     RECOMMENDATION_LEVELS,
     GENRE_LIST,
+    UPLOAD_DIR,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "BAND_NAMES",
     "RECOMMENDATION_LEVELS",
     "GENRE_LIST",
+    "UPLOAD_DIR",
 ]

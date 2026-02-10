@@ -1,4 +1,5 @@
 import { ChildProcess, spawn } from 'child_process';
+import fs from 'fs';
 import path from 'path';
 import http from 'http';
 
@@ -9,7 +10,7 @@ export class BackendManager {
 
   async start(): Promise<number> {
     const pythonPath = await this.findPython();
-    const backendDir = path.join(__dirname, '../../backend');
+    const backendDir = this.resolveBackendDir();
 
     console.log(`[BackendManager] Starting backend from: ${backendDir}`);
     console.log(`[BackendManager] Using Python: ${pythonPath}`);
@@ -155,6 +156,25 @@ export class BackendManager {
 
     throw new Error(
       'Python not found. Please install Python 3.10+ and ensure it is in your PATH.'
+    );
+  }
+
+  private resolveBackendDir(): string {
+    const candidates = [
+      path.resolve(__dirname, '../../backend'),
+      path.resolve(__dirname, '../../../backend'),
+      path.resolve(process.cwd(), 'backend'),
+      path.resolve(process.cwd(), '../backend'),
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(path.join(candidate, 'api'))) {
+        return candidate;
+      }
+    }
+
+    throw new Error(
+      `Backend directory not found. Checked: ${candidates.join(', ')}`
     );
   }
 

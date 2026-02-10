@@ -2,6 +2,7 @@ import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import type { ChartOptions } from 'chart.js';
 import type { BandData } from '../types';
+import { formatBandValue } from '@/utils/metricFormatters';
 
 interface BandBarChartProps {
   bands: BandData[];
@@ -70,8 +71,7 @@ const BandBarChart: React.FC<BandBarChartProps> = ({ bands, height = 200 }) => {
         callbacks: {
           label: (context) => {
             const band = bands[context.dataIndex];
-            const yVal = context.parsed.y ?? 0;
-            return `${yVal.toFixed(2)} ${band.unit}`;
+            return formatBandValue(band.value, band.unit);
           },
         },
       },

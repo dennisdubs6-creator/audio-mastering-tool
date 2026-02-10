@@ -22,6 +22,14 @@ class AudioData:
         duration: Duration in seconds (num_samples / sample_rate).
         channels: Number of channels in the original file (1 or 2).
         file_path: Absolute path to the source WAV file.
+        stereo_samples: Untouched stereo frames as a 2-D float32 array
+            normalized to [-1.0, 1.0].  Shape: (num_samples, 2).
+            ``None`` for mono sources.  Used by :class:`StandardsMetering`
+            so that true-peak and LUFS measurements operate on the original
+            stereo signal rather than a mono downmix.
+        dc_offset_detected: ``True`` when a DC offset was detected on the
+            raw mono samples before any automatic correction.
+        dc_offset_mean: Mean value measured before DC-offset removal.
     """
 
     samples: np.ndarray
@@ -30,6 +38,9 @@ class AudioData:
     duration: float
     channels: int
     file_path: str
+    stereo_samples: np.ndarray | None = None
+    dc_offset_detected: bool = False
+    dc_offset_mean: float = 0.0
 
 
 @dataclass

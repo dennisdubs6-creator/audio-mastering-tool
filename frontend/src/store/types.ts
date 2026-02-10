@@ -1,93 +1,74 @@
-export type AnalysisStatus = 'idle' | 'uploading' | 'analyzing' | 'completed' | 'error';
+import type {
+  AnalysisResponse,
+  ComparisonResponse,
+  ReferenceTrackResponse,
+  SimilarityMatchResponse,
+} from '@/api/types';
 
-export type RecommendationLevel = 'critical' | 'suggested' | 'optional';
+export type AnalysisStatus =
+  | 'idle'
+  | 'file_selected'
+  | 'uploading'
+  | 'analyzing'
+  | 'completed'
+  | 'error';
+
+export type RecommendationLevelOption = 'analytical' | 'suggestive' | 'prescriptive';
 
 export type ComparisonMode = 'overlay' | 'side-by-side' | 'difference';
+
+export interface AnalysisSettings {
+  genre: string;
+  recommendationLevel: RecommendationLevelOption;
+}
 
 export interface AnalysisProgress {
   status: AnalysisStatus;
   progress: number;
-  currentStep?: string;
+  currentBand?: string;
   error?: string;
 }
 
-export interface FrequencyData {
-  frequencies: number[];
-  magnitudes: number[];
+export interface FileInfo {
+  name: string;
+  path: string;
+  size: number;
 }
 
-export interface DynamicsData {
-  rms: number;
-  peak: number;
-  crestFactor: number;
-  lufs: number;
-  dynamicRange: number;
-}
+export type BatchFileStatus = 'pending' | 'analyzing' | 'complete' | 'error';
 
-export interface StereoData {
-  correlation: number;
-  width: number;
-  balance: number;
-}
-
-export interface Recommendation {
+export interface BatchFileState {
   id: string;
-  category: string;
-  level: RecommendationLevel;
-  message: string;
-  detail?: string;
-}
-
-export interface Analysis {
-  id: string;
+  file: File | null;
   fileName: string;
   filePath: string;
-  createdAt: string;
-  frequency?: FrequencyData;
-  dynamics?: DynamicsData;
-  stereo?: StereoData;
-  recommendations: Recommendation[];
-}
-
-export interface ReferenceMatch {
-  referenceId: string;
-  name: string;
-  genre: string;
-  similarity: number;
-}
-
-export interface Reference {
-  id: string;
-  name: string;
-  genre: string;
-  artist?: string;
-}
-
-export interface Comparison {
-  analysisId: string;
-  referenceId: string;
-  frequencyDelta: FrequencyData;
-  dynamicsDelta: DynamicsData;
-  stereoDelta: StereoData;
-  overallScore: number;
-}
-
-export interface FileState {
-  path: string;
-  name: string;
-  size: number;
-  status: AnalysisStatus;
-  analysisId?: string;
+  status: BatchFileStatus;
+  analysisId: string | null;
+  progress: number;
+  error: string | null;
 }
 
 export interface AnalysisState {
-  currentAnalysis: Analysis | null;
-  analysisProgress: AnalysisProgress;
-  batchFiles: FileState[];
+  status: AnalysisStatus;
+  file: FileInfo | null;
+  settings: AnalysisSettings | null;
+  analysisId: string | null;
+  progress: number;
+  currentBand: string | null;
+  results: AnalysisResponse | null;
+  currentAnalysis: AnalysisResponse | null;
+  batchFiles: BatchFileState[];
+  selectedBatchFileId: string | null;
+  error: string | null;
+  selectedReference: ReferenceTrackResponse | null;
+  comparisonMode: ComparisonMode;
+  similarReferences: SimilarityMatchResponse[];
+  comparisonData: ComparisonResponse | null;
 }
 
 export interface UIState {
   sidebarExpanded: boolean;
+  batchProcessing: boolean;
   activeModal: string | null;
   theme: 'dark' | 'light';
   expandedCards: string[];

@@ -1,79 +1,17 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import type { AnalysisResponse, ComparisonResponse, SimilaritySearchResponse } from './types';
 
-// Request/Response types matching backend schemas
 export interface AnalysisSettings {
   genre?: string;
-  targetLoudness?: number;
-  referenceId?: string;
-}
-
-export interface AnalysisResult {
-  id: string;
-  fileName: string;
-  status: string;
-  frequency?: {
-    frequencies: number[];
-    magnitudes: number[];
-  };
-  dynamics?: {
-    rms: number;
-    peak: number;
-    crestFactor: number;
-    lufs: number;
-    dynamicRange: number;
-  };
-  stereo?: {
-    correlation: number;
-    width: number;
-    balance: number;
-  };
-  recommendations: Array<{
-    id: string;
-    category: string;
-    level: 'critical' | 'suggested' | 'optional';
-    message: string;
-    detail?: string;
-  }>;
-}
-
-export interface ReferenceMatch {
-  referenceId: string;
-  name: string;
-  genre: string;
-  similarity: number;
-}
-
-export interface Reference {
-  id: string;
-  name: string;
-  genre: string;
-  artist?: string;
-}
-
-export interface ComparisonResult {
-  analysisId: string;
-  referenceId: string;
-  frequencyDelta: {
-    frequencies: number[];
-    magnitudes: number[];
-  };
-  dynamicsDelta: {
-    rms: number;
-    peak: number;
-    crestFactor: number;
-    lufs: number;
-    dynamicRange: number;
-  };
-  stereoDelta: {
-    correlation: number;
-    width: number;
-    balance: number;
-  };
-  overallScore: number;
+  recommendationLevel?: string;
 }
 
 export interface HealthResponse {
   status: string;
+}
+
+export interface UploadResponse {
+  analysis_id: string;
 }
 
 export class AudioAnalysisAPI {
@@ -100,49 +38,49 @@ export class AudioAnalysisAPI {
     }
   }
 
-  async uploadAndAnalyze(file: File, settings: AnalysisSettings = {}): Promise<string> {
+  async uploadAndAnalyze(file: File, settings: AnalysisSettings = {}): Promise<UploadResponse> {
     try {
       const formData = new FormData();
       formData.append('file', file);
       if (settings.genre) formData.append('genre', settings.genre);
-      if (settings.targetLoudness !== undefined) {
-        formData.append('target_loudness', String(settings.targetLoudness));
+      if (settings.recommendationLevel) {
+        formData.append('recommendation_level', settings.recommendationLevel);
       }
-      if (settings.referenceId) formData.append('reference_id', settings.referenceId);
 
-      const response = await this.client.post<{ id: string }>('/api/analyze', formData, {
+      const response = await this.client.post<UploadResponse>('/api/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 120000,
       });
 
-      return response.data.id;
-    } catch (err) {
-      throw this.handleError(err);
-    }
-  }
-
-  async getAnalysisResults(analysisId: string): Promise<AnalysisResult> {
-    try {
-      const response = await this.client.get<AnalysisResult>(`/api/analysis/${analysisId}`);
       return response.data;
     } catch (err) {
       throw this.handleError(err);
     }
   }
 
-  async findSimilarTracks(analysisId: string): Promise<ReferenceMatch[]> {
+  async getAnalysisResults(analysisId: string): Promise<AnalysisResponse> {
     try {
-      const response = await this.client.post<ReferenceMatch[]>(`/api/similarity/${analysisId}`);
+      const response = await this.client.get<AnalysisResponse>(`/api/analysis/${analysisId}`);
       return response.data;
     } catch (err) {
       throw this.handleError(err);
     }
   }
 
-  async compareWithReference(analysisId: string, referenceId: string): Promise<ComparisonResult> {
+  async findSimilarTracks(
+    analysisId: string,
+    genre?: string,
+    topK?: number,
+  ): Promise<SimilaritySearchResponse> {
     try {
-      const response = await this.client.get<ComparisonResult>(
-        `/api/compare/${analysisId}/${referenceId}`
+      const params: Record<string, string | number> = {};
+      if (genre) params.genre = genre;
+      if (topK) params.top_k = topK;
+
+      const response = await this.client.post<SimilaritySearchResponse>(
+        `/api/similarity/${analysisId}`,
+        null,
+        { params },
       );
       return response.data;
     } catch (err) {
@@ -150,14 +88,27 @@ export class AudioAnalysisAPI {
     }
   }
 
-  async getReferences(genre?: string): Promise<Reference[]> {
+  async compareWithReference(
+    analysisId: string,
+    referenceId: string,
+    recommendationLevel?: string,
+  ): Promise<ComparisonResponse> {
     try {
-      const params = genre ? { genre } : {};
-      const response = await this.client.get<Reference[]>('/api/references', { params });
+      const params: Record<string, string> = {};
+      if (recommendationLevel) params.recommendation_level = recommendationLevel;
+
+      const response = await this.client.get<ComparisonResponse>(
+        `/api/compare/${analysisId}/${referenceId}`,
+        { params },
+      );
       return response.data;
     } catch (err) {
       throw this.handleError(err);
     }
+  }
+
+  getBaseUrl(): string {
+    return this.client.defaults.baseURL || '';
   }
 
   private handleError(err: unknown): Error {

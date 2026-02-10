@@ -1,6 +1,7 @@
 import React from 'react';
 import type { MetricCardData } from '../types';
 import BandBarChart from './BandBarChart';
+import { formatBandNumeric } from '@/utils/metricFormatters';
 
 interface ExpandedViewProps {
   card: MetricCardData;
@@ -34,7 +35,7 @@ const ExpandedView: React.FC<ExpandedViewProps> = ({ card }) => {
                     </span>
                   </td>
                   <td className="py-2 pr-4 text-right text-slate-200 font-mono">
-                    {band.value.toFixed(2)}
+                    {formatBandNumeric(band.value, band.unit)}
                   </td>
                   <td className="py-2 text-right text-slate-400">
                     {band.unit}

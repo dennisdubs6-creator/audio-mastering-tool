@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
+import fs from 'fs/promises';
 import { BackendManager } from './backend-manager';
 
 let mainWindow: BrowserWindow | null = null;
@@ -48,9 +49,7 @@ ipcMain.handle('select-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
-      { name: 'Audio Files', extensions: ['wav', 'flac', 'mp3', 'aiff', 'ogg'] },
       { name: 'WAV Files', extensions: ['wav'] },
-      { name: 'All Files', extensions: ['*'] },
     ],
   });
 
@@ -59,6 +58,33 @@ ipcMain.handle('select-file', async () => {
   }
 
   return result.filePaths[0];
+});
+
+ipcMain.handle('select-files', async () => {
+  if (!mainWindow) return null;
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'WAV Files', extensions: ['wav'] },
+    ],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths;
+});
+
+ipcMain.handle('read-file-bytes', async (_event, filePath: string) => {
+  try {
+    const buffer = await fs.readFile(filePath);
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+  } catch (err) {
+    console.error('[Main] Failed to read file:', err);
+    return null;
+  }
 });
 
 ipcMain.handle('restart-backend', async () => {

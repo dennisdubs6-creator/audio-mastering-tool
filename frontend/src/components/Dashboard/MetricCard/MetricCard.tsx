@@ -1,13 +1,22 @@
 import React from 'react';
-import type { MetricCardData, SeverityLevel } from '../types';
+import type { RecommendationResponse } from '@/api/types';
+import type { ComparisonMode, RecommendationLevelOption } from '@/store/types';
+import type { MetricCardData, SeverityLevel, BandData } from '../types';
 import CardHeader from './CardHeader';
 import BandBarChart from './BandBarChart';
 import InlineRecommendation from './InlineRecommendation';
 import ExpandedView from './ExpandedView';
+import SideBySideView from '@/components/Comparison/SideBySideView';
+import OverlayView from '@/components/Comparison/OverlayView';
+import DifferenceView from '@/components/Comparison/DifferenceView';
 
 interface MetricCardProps {
   card: MetricCardData;
   onToggleExpand: () => void;
+  comparisonMode?: ComparisonMode | null;
+  referenceBands?: BandData[] | null;
+  comparisonRecommendations?: RecommendationResponse[];
+  recommendationLevel?: RecommendationLevelOption;
 }
 
 const SEVERITY_BORDER: Record<SeverityLevel, string> = {
@@ -16,7 +25,51 @@ const SEVERITY_BORDER: Record<SeverityLevel, string> = {
   issue: 'border-l-4 border-l-red-500',
 };
 
-const MetricCard: React.FC<MetricCardProps> = ({ card, onToggleExpand }) => {
+const MetricCard: React.FC<MetricCardProps> = ({
+  card,
+  onToggleExpand,
+  comparisonMode,
+  referenceBands,
+  comparisonRecommendations,
+  recommendationLevel,
+}) => {
+  const isComparing = comparisonMode && referenceBands && referenceBands.length > 0;
+
+  const renderChart = () => {
+    if (!isComparing) {
+      return <BandBarChart bands={card.bands} height={180} />;
+    }
+
+    switch (comparisonMode) {
+      case 'side-by-side':
+        return (
+          <SideBySideView
+            userBands={card.bands}
+            referenceBands={referenceBands!}
+            height={180}
+          />
+        );
+      case 'overlay':
+        return (
+          <OverlayView
+            userBands={card.bands}
+            referenceBands={referenceBands!}
+            height={180}
+          />
+        );
+      case 'difference':
+        return (
+          <DifferenceView
+            userBands={card.bands}
+            referenceBands={referenceBands!}
+            height={180}
+          />
+        );
+      default:
+        return <BandBarChart bands={card.bands} height={180} />;
+    }
+  };
+
   return (
     <div
       role="region"
@@ -37,9 +90,13 @@ const MetricCard: React.FC<MetricCardProps> = ({ card, onToggleExpand }) => {
         </div>
       )}
 
-      {!card.expanded && <BandBarChart bands={card.bands} height={180} />}
+      {!card.expanded && renderChart()}
 
-      <InlineRecommendation text={card.recommendation} />
+      <InlineRecommendation
+        text={card.recommendation}
+        recommendations={comparisonRecommendations}
+        level={recommendationLevel}
+      />
 
       <button
         onClick={onToggleExpand}

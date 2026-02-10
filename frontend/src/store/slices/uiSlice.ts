@@ -3,6 +3,7 @@ import { UIState } from '../types';
 
 const initialState: UIState = {
   sidebarExpanded: false,
+  batchProcessing: false,
   activeModal: null,
   theme: 'dark',
   expandedCards: [],
@@ -15,16 +16,22 @@ const uiSlice = createSlice({
     toggleSidebar(state) {
       state.sidebarExpanded = !state.sidebarExpanded;
     },
+    setSidebarExpanded(state, action: PayloadAction<boolean>) {
+      state.sidebarExpanded = action.payload;
+    },
+    setBatchProcessing(state, action: PayloadAction<boolean>) {
+      state.batchProcessing = action.payload;
+    },
     setActiveModal(state, action: PayloadAction<string | null>) {
       state.activeModal = action.payload;
     },
     toggleCardExpansion(state, action: PayloadAction<string>) {
       const cardId = action.payload;
-      const index = state.expandedCards.indexOf(cardId);
-      if (index >= 0) {
-        state.expandedCards.splice(index, 1);
+      const currentlyExpanded = state.expandedCards[0];
+      if (currentlyExpanded === cardId) {
+        state.expandedCards = [];
       } else {
-        state.expandedCards.push(cardId);
+        state.expandedCards = [cardId];
       }
     },
     setTheme(state, action: PayloadAction<'dark' | 'light'>) {
@@ -35,6 +42,8 @@ const uiSlice = createSlice({
 
 export const {
   toggleSidebar,
+  setSidebarExpanded,
+  setBatchProcessing,
   setActiveModal,
   toggleCardExpansion,
   setTheme,

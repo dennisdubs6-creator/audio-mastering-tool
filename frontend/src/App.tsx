@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { AudioAnalysisAPI } from '@/api/client';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
 import MainContent from '@/components/Layout/MainContent';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Button from '@/components/common/Button';
+import Modal from '@/components/common/Modal';
+import ErrorMessage from '@/components/common/ErrorMessage';
+import EmptyState from '@/components/Upload/EmptyState';
+import SettingsScreen from '@/components/Settings/SettingsScreen';
+import ProgressScreen from '@/components/Progress/ProgressScreen';
+import DashboardView from '@/components/Dashboard/DashboardView';
+import ErrorBoundary from '@/components/ErrorHandling/ErrorBoundary';
+import { useAnalysis } from '@/hooks/useAnalysis';
+import { useBatchAnalysis } from '@/hooks/useBatchAnalysis';
+import { useAppSelector } from '@/store';
+import type { AnalysisSettings, FileInfo } from '@/store/types';
 
 type ConnectionState = 'connecting' | 'ready' | 'error';
 
@@ -13,6 +24,8 @@ declare global {
     electron: {
       getBackendPort: () => Promise<number | null>;
       selectFile: () => Promise<string | null>;
+      selectFiles: () => Promise<string[] | null>;
+      readFileBytes: (filePath: string) => Promise<ArrayBuffer | null>;
       restartBackend: () => Promise<number | null>;
     };
   }
@@ -22,6 +35,21 @@ const App: React.FC = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [apiClient, setApiClient] = useState<AudioAnalysisAPI | null>(null);
+
+  // Track the dropped File object for upload
+  const droppedFileRef = useRef<File | null>(null);
+
+  const { state: analysisState, selectFile, startAnalysis, cancelAnalysis, reset } =
+    useAnalysis(apiClient);
+
+  const { addFilesToBatch, processBatch, switchToFile } = useBatchAnalysis(apiClient);
+
+  const selectedBatchFileId = useAppSelector((s) => s.analysis.selectedBatchFileId);
+  const batchFiles = useAppSelector((s) => s.analysis.batchFiles);
+  const isBatchProcessing = useAppSelector((s) => s.ui.batchProcessing);
+  const selectedBatchFile = selectedBatchFileId
+    ? batchFiles.find((file) => file.id === selectedBatchFileId) ?? null
+    : null;
 
   const connectToBackend = async () => {
     setConnectionState('connecting');
@@ -80,6 +108,106 @@ const App: React.FC = () => {
     connectToBackend();
   }, []);
 
+  // Switch to file when selectedBatchFileId changes
+  useEffect(() => {
+    if (selectedBatchFileId) {
+      switchToFile(selectedBatchFileId);
+    }
+  }, [selectedBatchFileId, switchToFile]);
+
+  // --- Handlers for EmptyState ---
+  const handleFileAccepted = (file: File) => {
+    droppedFileRef.current = file;
+    const fileInfo: FileInfo = { name: file.name, path: '', size: file.size };
+    selectFile(fileInfo);
+  };
+
+  const handleFilesAccepted = useCallback(
+    (files: File[]) => {
+      const batchEntries = files.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        fileName: file.name,
+        filePath: '',
+      }));
+      addFilesToBatch(batchEntries);
+
+      // Also select the first file for single-file flow
+      if (files.length === 1) {
+        droppedFileRef.current = files[0];
+        const fileInfo: FileInfo = { name: files[0].name, path: '', size: files[0].size };
+        selectFile(fileInfo);
+      }
+    },
+    [addFilesToBatch, selectFile]
+  );
+
+  const handleElectronFileSelected = (filePath: string) => {
+    droppedFileRef.current = null;
+    const name = filePath.split(/[/\\]/).pop() || filePath;
+    const fileInfo: FileInfo = { name, path: filePath, size: 0 };
+    selectFile(fileInfo);
+  };
+
+  const handleElectronFilesSelected = useCallback(
+    (filePaths: string[]) => {
+      const batchEntries = filePaths.map((fp) => ({
+        id: crypto.randomUUID(),
+        file: null,
+        fileName: fp.split(/[/\\]/).pop() || fp,
+        filePath: fp,
+      }));
+      addFilesToBatch(batchEntries);
+
+      // Also select the first file for single-file flow
+      if (filePaths.length === 1) {
+        droppedFileRef.current = null;
+        const name = filePaths[0].split(/[/\\]/).pop() || filePaths[0];
+        const fileInfo: FileInfo = { name, path: filePaths[0], size: 0 };
+        selectFile(fileInfo);
+      }
+    },
+    [addFilesToBatch, selectFile]
+  );
+
+  const handleAddFiles = useCallback(() => {
+    // Trigger file selection for adding more files to batch
+    window.electron.selectFiles().then((filePaths) => {
+      if (filePaths && filePaths.length > 0) {
+        handleElectronFilesSelected(filePaths);
+      }
+    });
+  }, [handleElectronFilesSelected]);
+
+  // --- Handlers for SettingsScreen ---
+  const handleAnalyze = async (settings: AnalysisSettings) => {
+    // If batch files exist, process them all
+    if (batchFiles.length > 1) {
+      await processBatch(batchFiles, settings);
+      return;
+    }
+
+    const file = droppedFileRef.current;
+    if (file) {
+      await startAnalysis(file, settings);
+    } else if (analysisState.file?.path) {
+      // File was selected via Electron dialog — read bytes via IPC
+      try {
+        const arrayBuffer = await window.electron.readFileBytes(analysisState.file.path);
+        if (!arrayBuffer) {
+          throw new Error('Failed to read file from disk');
+        }
+        const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
+        const f = new File([blob], analysisState.file.name, { type: 'audio/wav' });
+        await startAnalysis(f, settings);
+      } catch (err) {
+        console.error('[App] Failed to read file via IPC:', err);
+        alert(`Could not read file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    }
+  };
+
+  // --- Connection screens ---
   if (connectionState === 'connecting') {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-950">
@@ -120,54 +248,91 @@ const App: React.FC = () => {
     );
   }
 
+  // --- Main app content based on analysis status ---
+  const renderContent = () => {
+    if (
+      isBatchProcessing &&
+      selectedBatchFile &&
+      (selectedBatchFile.status === 'pending' || selectedBatchFile.status === 'analyzing')
+    ) {
+      return (
+        <ProgressScreen
+          fileName={selectedBatchFile.fileName}
+          percent={selectedBatchFile.progress}
+          currentBand={analysisState.currentBand}
+          onCancel={cancelAnalysis}
+        />
+      );
+    }
+
+    switch (analysisState.status) {
+      case 'idle':
+        return (
+          <EmptyState
+            onFileAccepted={handleFileAccepted}
+            onFilesAccepted={handleFilesAccepted}
+            onElectronFileSelected={handleElectronFileSelected}
+            onElectronFilesSelected={handleElectronFilesSelected}
+          />
+        );
+
+      case 'file_selected':
+        return (
+          <SettingsScreen
+            fileName={analysisState.file?.name || 'Unknown file'}
+            fileSize={analysisState.file?.size || 0}
+            onAnalyze={handleAnalyze}
+            onCancel={reset}
+          />
+        );
+
+      case 'uploading':
+      case 'analyzing':
+        return (
+          <ProgressScreen
+            fileName={analysisState.file?.name || 'Unknown file'}
+            percent={analysisState.progress}
+            currentBand={analysisState.currentBand}
+            onCancel={cancelAnalysis}
+          />
+        );
+
+      case 'completed':
+        return (
+          <DashboardView
+            analysisId={analysisState.analysisId}
+            fileName={analysisState.results?.file_name}
+            onAnalyzeAnother={reset}
+            apiClient={apiClient}
+            isBatchFile={batchFiles.length > 1}
+          />
+        );
+
+      case 'error':
+        return null; // Handled by modal below
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="h-screen w-screen flex flex-col bg-slate-950">
-      <Header />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <MainContent>
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <svg
-              className="w-16 h-16 text-slate-600 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-              />
-            </svg>
-            <h2 className="text-xl font-semibold text-slate-300 mb-2">
-              Ready to Analyze
-            </h2>
-            <p className="text-sm text-slate-500 mb-6 max-w-sm">
-              Upload an audio file to begin mastering analysis. Supported formats: WAV, FLAC, MP3,
-              AIFF, OGG.
-            </p>
-            <Button
-              variant="primary"
-              onClick={async () => {
-                const filePath = await window.electron.selectFile();
-                if (filePath) {
-                  console.log(`[App] Selected file: ${filePath}`);
-                  // File handling will be implemented in the analysis feature
-                }
-              }}
-            >
-              Select Audio File
-            </Button>
-            {apiClient && (
-              <p className="text-xs text-slate-600 mt-4">
-                Backend connected
-              </p>
-            )}
-          </div>
-        </MainContent>
+    <ErrorBoundary>
+      <div className="h-screen w-screen flex flex-col bg-slate-950">
+        <Header />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar onAddFiles={handleAddFiles} />
+          <MainContent>{renderContent()}</MainContent>
+        </div>
+
+        <Modal open={analysisState.status === 'error'} onClose={reset}>
+          <ErrorMessage
+            message={analysisState.error || 'An unexpected error occurred'}
+            onRetry={reset}
+          />
+        </Modal>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 

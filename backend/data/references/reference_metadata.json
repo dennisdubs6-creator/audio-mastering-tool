@@ -1,0 +1,194 @@
+[
+  {
+    "track_name": "Becoming Insane",
+    "artist": "Infected Mushroom",
+    "genre": "Psytrance",
+    "sub_genre": "Full-On",
+    "year": 2007,
+    "description": "Aggressive full-on psytrance with complex layering and heavy bass"
+  },
+  {
+    "track_name": "Deep Jungle Walk",
+    "artist": "Astrix",
+    "genre": "Psytrance",
+    "sub_genre": "Progressive",
+    "year": 2015,
+    "description": "Driving progressive psytrance with deep bass and ethereal pads"
+  },
+  {
+    "track_name": "Great Spirit",
+    "artist": "Vini Vici",
+    "genre": "Psytrance",
+    "sub_genre": "Full-On",
+    "year": 2015,
+    "description": "High-energy full-on psytrance with tribal vocal chants"
+  },
+  {
+    "track_name": "Presence",
+    "artist": "Ace Ventura",
+    "genre": "Psytrance",
+    "sub_genre": "Progressive",
+    "year": 2014,
+    "description": "Melodic progressive psytrance with warm bass and atmospheric elements"
+  },
+  {
+    "track_name": "Divine Moments of Truth",
+    "artist": "Shpongle",
+    "genre": "Psytrance",
+    "sub_genre": "Psychedelic",
+    "year": 1998,
+    "description": "Classic psychedelic trance with world music influences and organic textures"
+  },
+  {
+    "track_name": "You're Under Control",
+    "artist": "Neelix",
+    "genre": "Psytrance",
+    "sub_genre": "Progressive",
+    "year": 2012,
+    "description": "Energetic progressive psytrance with uplifting melodies"
+  },
+  {
+    "track_name": "Adrenaline",
+    "artist": "Liquid Soul",
+    "genre": "Psytrance",
+    "sub_genre": "Progressive",
+    "year": 2016,
+    "description": "Smooth progressive psytrance with trance-influenced breakdowns"
+  },
+  {
+    "track_name": "Distant Futures",
+    "artist": "Avalon",
+    "genre": "Psytrance",
+    "sub_genre": "Full-On",
+    "year": 2011,
+    "description": "Powerful full-on psytrance with driving basslines and acid leads"
+  },
+  {
+    "track_name": "Communication",
+    "artist": "Armin van Buuren",
+    "genre": "Trance",
+    "sub_genre": "Uplifting",
+    "year": 1999,
+    "description": "Classic uplifting trance with euphoric melodies and progressive build"
+  },
+  {
+    "track_name": "Sun & Moon",
+    "artist": "Above & Beyond",
+    "genre": "Trance",
+    "sub_genre": "Progressive",
+    "year": 2011,
+    "description": "Emotional progressive trance with vocal elements and wide stereo field"
+  },
+  {
+    "track_name": "For an Angel",
+    "artist": "Paul van Dyk",
+    "genre": "Trance",
+    "sub_genre": "Uplifting",
+    "year": 1998,
+    "description": "Iconic uplifting trance anthem with sweeping pads and driving rhythm"
+  },
+  {
+    "track_name": "Punk",
+    "artist": "Ferry Corsten",
+    "genre": "Trance",
+    "sub_genre": "Tech",
+    "year": 2002,
+    "description": "Hard-hitting tech trance with aggressive synths and tight production"
+  },
+  {
+    "track_name": "The Other Shore",
+    "artist": "Aly & Fila",
+    "genre": "Trance",
+    "sub_genre": "Uplifting",
+    "year": 2014,
+    "description": "Epic uplifting trance with soaring leads and emotional breakdowns"
+  },
+  {
+    "track_name": "Seven Cities",
+    "artist": "Solarstone",
+    "genre": "Trance",
+    "sub_genre": "Uplifting",
+    "year": 1999,
+    "description": "Atmospheric uplifting trance with lush pads and progressive structure"
+  },
+  {
+    "track_name": "Your Mind",
+    "artist": "Adam Beyer",
+    "genre": "Techno",
+    "sub_genre": "Techno",
+    "year": 2017,
+    "description": "Dark driving techno with heavy kick drums and industrial textures"
+  },
+  {
+    "track_name": "Selected",
+    "artist": "Charlotte de Witte",
+    "genre": "Techno",
+    "sub_genre": "Techno",
+    "year": 2019,
+    "description": "Hypnotic acid techno with relentless energy and raw production"
+  },
+  {
+    "track_name": "Strobe",
+    "artist": "Deadmau5",
+    "genre": "House",
+    "sub_genre": "Progressive House",
+    "year": 2009,
+    "description": "Progressive house epic with gradual build, warm pads, and deep bass"
+  },
+  {
+    "track_name": "Opus",
+    "artist": "Eric Prydz",
+    "genre": "House",
+    "sub_genre": "Progressive House",
+    "year": 2016,
+    "description": "Cinematic progressive house with sweeping synth layers and massive climax"
+  },
+  {
+    "track_name": "One More Time",
+    "artist": "Daft Punk",
+    "genre": "House",
+    "sub_genre": "French House",
+    "year": 2000,
+    "description": "Classic French house with filtered disco samples and vocodered vocals"
+  },
+  {
+    "track_name": "Stigma",
+    "artist": "Noisia",
+    "genre": "Drum & Bass",
+    "sub_genre": "Neurofunk",
+    "year": 2007,
+    "description": "Technical neurofunk with complex sound design and heavy bass processing"
+  },
+  {
+    "track_name": "Watercolour",
+    "artist": "Pendulum",
+    "genre": "Drum & Bass",
+    "sub_genre": "Liquid",
+    "year": 2010,
+    "description": "Melodic drum and bass crossover with rock influences and wide stereo"
+  },
+  {
+    "track_name": "Memory Lane",
+    "artist": "Netsky",
+    "genre": "Drum & Bass",
+    "sub_genre": "Liquid",
+    "year": 2010,
+    "description": "Smooth liquid drum and bass with soulful vocals and bright production"
+  },
+  {
+    "track_name": "Scary Monsters and Nice Sprites",
+    "artist": "Skrillex",
+    "genre": "Dubstep",
+    "sub_genre": "Brostep",
+    "year": 2010,
+    "description": "Aggressive brostep with extreme bass drops and distorted mid-range"
+  },
+  {
+    "track_name": "Archangel",
+    "artist": "Burial",
+    "genre": "Dubstep",
+    "sub_genre": "Deep Dubstep",
+    "year": 2007,
+    "description": "Atmospheric deep dubstep with chopped vocals and dark ambiance"
+  }
+]
