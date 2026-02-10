@@ -1,5 +1,5 @@
 """
-SQLAlchemy ORM models for all 7 database tables.
+SQLAlchemy ORM models for all 8 database tables.
 
 Tables:
     - analysis: Core analysis records for uploaded audio files.
@@ -7,6 +7,7 @@ Tables:
     - overall_metrics: Aggregate metrics for a complete analysis.
     - reference_tracks: Built-in and user-added reference tracks.
     - reference_band_metrics: Per-band metrics for reference tracks.
+    - reference_overall_metrics: Aggregate metrics for reference tracks.
     - recommendations: Band-level mastering recommendations.
     - user_settings: Key-value application settings.
 """
@@ -61,6 +62,7 @@ class Analysis(Base):
     sample_rate = Column(Integer, nullable=True)
     bit_depth = Column(Integer, nullable=True)
     duration_seconds = Column(Float, nullable=True)
+    status = Column(String(50), default="pending", nullable=False)
     genre = Column(String(100), nullable=True)
     genre_confidence = Column(Float, nullable=True)
     recommendation_level = Column(String(50), default="suggestive", nullable=False)
@@ -147,6 +149,7 @@ class OverallMetrics(Base):
     avg_phase_correlation = Column(Float, nullable=True)
     spectral_centroid_hz = Column(Float, nullable=True)
     spectral_bandwidth_hz = Column(Float, nullable=True)
+    warnings = Column(Text, nullable=True)
 
     analysis = relationship("Analysis", back_populates="overall_metrics")
 
@@ -179,6 +182,12 @@ class ReferenceTrack(Base):
         "ReferenceBandMetrics",
         back_populates="reference_track",
         cascade="all, delete-orphan",
+    )
+    reference_overall_metrics = relationship(
+        "ReferenceOverallMetrics",
+        back_populates="reference_track",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     __table_args__ = (
@@ -228,6 +237,37 @@ class ReferenceBandMetrics(Base):
     __table_args__ = (
         Index("idx_ref_band_metrics_reference", "reference_track_id"),
         Index("idx_ref_band_metrics_band", "band_name"),
+    )
+
+
+class ReferenceOverallMetrics(Base):
+    """Aggregate audio metrics for a reference track.
+
+    One-to-one relationship with ReferenceTrack. Mirrors the OverallMetrics
+    structure but is linked to a reference track instead of an analysis.
+    """
+
+    __tablename__ = "reference_overall_metrics"
+
+    id = Column(Text, primary_key=True, default=_generate_uuid)
+    reference_track_id = Column(
+        Text, ForeignKey("reference_tracks.id", ondelete="CASCADE"), nullable=False
+    )
+    integrated_lufs = Column(Float, nullable=True)
+    loudness_range_lu = Column(Float, nullable=True)
+    true_peak_dbfs = Column(Float, nullable=True)
+    dynamic_range_db = Column(Float, nullable=True)
+    crest_factor_db = Column(Float, nullable=True)
+    avg_stereo_width_percent = Column(Float, nullable=True)
+    avg_phase_correlation = Column(Float, nullable=True)
+    spectral_centroid_hz = Column(Float, nullable=True)
+    spectral_bandwidth_hz = Column(Float, nullable=True)
+
+    reference_track = relationship("ReferenceTrack", back_populates="reference_overall_metrics")
+
+    __table_args__ = (
+        Index("idx_ref_overall_metrics_reference", "reference_track_id"),
+        UniqueConstraint("reference_track_id", name="uq_ref_overall_metrics_reference"),
     )
 
 

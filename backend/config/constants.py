@@ -5,6 +5,14 @@ Defines the frequency bands, recommendation levels, and genre list used
 throughout the application for audio analysis and mastering recommendations.
 """
 
+import os
+
+UPLOAD_DIR: str = os.environ.get(
+    "UPLOAD_DIR",
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads"),
+)
+"""Directory for durable storage of uploaded audio files."""
+
 FREQUENCY_BANDS: dict[str, tuple[int, int]] = {
     "low": (20, 200),
     "low_mid": (200, 500),

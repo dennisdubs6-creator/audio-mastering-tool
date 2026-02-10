@@ -5,6 +5,7 @@ Creates the app instance, configures CORS middleware, and wires up the
 lifespan event to initialise the database and logging on startup.
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -14,7 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.core.logging import setup_logging
 from api.database import init_db
-from api.routers import health, analyze, references
+from api.error_handlers import register_error_handlers
+from api.routers import health, analyze, progress, references, comparison
+from api.routers.analyze import set_main_loop
 
 
 @asynccontextmanager
@@ -25,6 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting Audio Mastering Tool API")
     init_db()
     logger.info("Database initialized")
+    set_main_loop(asyncio.get_running_loop())
     yield
     logger.info("Shutting down Audio Mastering Tool API")
 
@@ -43,6 +47,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_error_handlers(app)
+
 app.include_router(health.router)
 app.include_router(analyze.router)
+app.include_router(progress.router)
 app.include_router(references.router)
+app.include_router(comparison.router)

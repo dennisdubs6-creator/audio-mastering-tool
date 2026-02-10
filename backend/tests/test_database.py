@@ -13,6 +13,7 @@ EXPECTED_TABLES = [
     "overall_metrics",
     "reference_tracks",
     "reference_band_metrics",
+    "reference_overall_metrics",
     "recommendations",
     "user_settings",
 ]
@@ -39,10 +40,10 @@ def test_all_tables_created(engine):
 
 
 def test_table_count(engine):
-    """Exactly 7 tables should exist."""
+    """Exactly 8 tables should exist."""
     inspector = inspect(engine)
     tables = inspector.get_table_names()
-    assert len(tables) == 7
+    assert len(tables) == 8
 
 
 def test_analysis_columns(engine):
@@ -51,11 +52,18 @@ def test_analysis_columns(engine):
     columns = {col["name"] for col in inspector.get_columns("analysis")}
     expected = {
         "id", "file_path", "file_name", "file_size", "sample_rate",
-        "bit_depth", "duration_seconds", "genre", "genre_confidence",
+        "bit_depth", "duration_seconds", "status", "genre", "genre_confidence",
         "recommendation_level", "analysis_engine_version",
         "analysis_parameters_json", "created_at", "updated_at",
     }
     assert expected.issubset(columns)
+
+
+def test_overall_metrics_columns(engine):
+    """The overall_metrics table should include warning text storage."""
+    inspector = inspect(engine)
+    columns = {col["name"] for col in inspector.get_columns("overall_metrics")}
+    assert "warnings" in columns
 
 
 def test_band_metrics_foreign_key(engine):

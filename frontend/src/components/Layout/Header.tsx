@@ -36,7 +36,7 @@ const Header: React.FC = () => {
         {currentAnalysis && (
           <div className="flex items-center gap-2 text-sm">
             <span className="text-slate-400">Current:</span>
-            <span className="text-slate-200 font-medium">{currentAnalysis.fileName}</span>
+            <span className="text-slate-200 font-medium">{currentAnalysis.file_name}</span>
           </div>
         )}
         <button

@@ -6,7 +6,7 @@ for automatic validation and OpenAPI documentation.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -62,6 +62,7 @@ class OverallMetricResponse(BaseModel):
     avg_phase_correlation: Optional[float] = None
     spectral_centroid_hz: Optional[float] = None
     spectral_bandwidth_hz: Optional[float] = None
+    warnings: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -123,8 +124,21 @@ class AnalysisResponse(BaseModel):
     band_metrics: list[BandMetricResponse] = []
     overall_metrics: Optional[OverallMetricResponse] = None
     recommendations: list[RecommendationResponse] = []
+    warnings: Optional[List[str]] = None
 
     model_config = {"from_attributes": True}
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        instance = super().model_validate(obj, **kwargs)
+        # Parse warnings from overall_metrics JSON string
+        if instance.overall_metrics and instance.overall_metrics.warnings:
+            import json
+            try:
+                instance.warnings = json.loads(instance.overall_metrics.warnings)
+            except (json.JSONDecodeError, TypeError):
+                instance.warnings = None
+        return instance
 
 
 # ---------------------------------------------------------------------------
@@ -143,3 +157,41 @@ class ReferenceTrackResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Similarity Search
+# ---------------------------------------------------------------------------
+
+class SimilarityMatchResponse(BaseModel):
+    """A single similarity match result."""
+
+    reference_id: str
+    track_name: str
+    artist: Optional[str] = None
+    genre: Optional[str] = None
+    year: Optional[int] = None
+    similarity_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Cosine similarity score (0.0-1.0)"
+    )
+
+
+class SimilaritySearchResponse(BaseModel):
+    """Response from the similarity search endpoint."""
+
+    matches: List[SimilarityMatchResponse]
+
+
+# ---------------------------------------------------------------------------
+# Comparison
+# ---------------------------------------------------------------------------
+
+class ComparisonResponse(BaseModel):
+    """Response from the comparison endpoint."""
+
+    user_analysis: AnalysisResponse
+    reference_track: ReferenceTrackResponse
+    reference_band_metrics: List[BandMetricResponse]
+    reference_overall_metrics: Optional[OverallMetricResponse] = None
+    recommendations: List[RecommendationResponse]
+    comparison_mode: str = "side-by-side"

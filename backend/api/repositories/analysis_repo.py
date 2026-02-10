@@ -95,6 +95,18 @@ class AnalysisRepository(BaseRepository[Analysis]):
         logger.info("Saved complete analysis id=%s with %d band metrics", analysis.id, len(band_metrics))
         return analysis
 
+    def update_status(self, analysis_id: str, status: str) -> None:
+        """Update the status field of an analysis record.
+
+        Args:
+            analysis_id: UUID string of the analysis.
+            status: New status value (pending, processing, completed, failed).
+        """
+        analysis = self._session.get(Analysis, analysis_id)
+        if analysis is not None:
+            analysis.status = status
+            self._session.commit()
+
     def get_by_genre(self, genre: str) -> Sequence[Analysis]:
         """Return all analyses matching the given genre.
 

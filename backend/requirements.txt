@@ -12,3 +12,7 @@ soundfile>=0.12.1
 numpy>=1.24.0
 scipy>=1.11.0
 librosa>=0.10.0
+pyloudnorm>=0.1.1
+
+# pyebur128 for BS.1770-4 true peak and LUFS cross-validation via libebur128
+pyebur128>=0.3.1

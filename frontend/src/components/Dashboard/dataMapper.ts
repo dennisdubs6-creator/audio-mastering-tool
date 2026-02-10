@@ -1,5 +1,5 @@
-import type { AnalysisResponse, BandMetricResponse, RecommendationResponse } from '@/api/types';
-import type { MetricCardData, SeverityLevel } from './types';
+import type { AnalysisResponse, BandMetricResponse, ComparisonResponse, RecommendationResponse } from '@/api/types';
+import type { MetricCardData, SeverityLevel, BandData } from './types';
 import { getBandColor, getBandDisplayName } from '@/utils/bandColors';
 import {
   formatLufs,
@@ -320,4 +320,71 @@ export function mapAnalysisToCards(
     mapHarmonics(results, expandedCards.includes('harmonics')),
     mapTransients(results, expandedCards.includes('transients')),
   ];
+}
+
+interface ComparisonCardData {
+  referenceBands: BandData[];
+  recommendations: RecommendationResponse[];
+}
+
+export function mapComparisonToCardData(
+  comparisonData: ComparisonResponse | null
+): Record<string, ComparisonCardData> | undefined {
+  if (!comparisonData) return undefined;
+
+  const refBands = sortBands(comparisonData.reference_band_metrics);
+  const recommendations = comparisonData.recommendations;
+
+  const categoryMetricMap: Record<string, (b: BandMetricResponse) => number> = {
+    loudness: (b) => b.band_rms_dbfs ?? 0,
+    dynamics: (b) => b.dynamic_range_db ?? 0,
+    frequency: (b) => b.energy_db ?? 0,
+    stereo: (b) => b.stereo_width_percent ?? 0,
+    harmonics: (b) => b.thd_percent ?? 0,
+    transients: (b) => b.transient_preservation ?? 0,
+  };
+
+  const categoryUnits: Record<string, string> = {
+    loudness: 'dBFS',
+    dynamics: 'dB',
+    frequency: 'dB',
+    stereo: '%',
+    harmonics: '%',
+    transients: '',
+  };
+
+  // Map metric_category from recommendations to card categories
+  const recCategoryMap: Record<string, string> = {
+    loudness: 'loudness',
+    frequency: 'frequency',
+    dynamic_range: 'dynamics',
+    stereo_width: 'stereo',
+    integrated_lufs: 'loudness',
+    dynamic_range_db: 'dynamics',
+    true_peak_dbfs: 'loudness',
+    avg_stereo_width_percent: 'stereo',
+  };
+
+  const result: Record<string, ComparisonCardData> = {};
+
+  for (const category of Object.keys(categoryMetricMap)) {
+    const metricFn = categoryMetricMap[category];
+    const unit = categoryUnits[category];
+
+    const bands: BandData[] = refBands.map((b) => ({
+      bandName: getBandDisplayName(b.band_name),
+      value: metricFn(b),
+      unit,
+      color: getBandColor(b.band_name),
+    }));
+
+    const categoryRecs = recommendations.filter((r) => {
+      const mapped = recCategoryMap[r.metric_category || ''];
+      return mapped === category;
+    });
+
+    result[category] = { referenceBands: bands, recommendations: categoryRecs };
+  }
+
+  return result;
 }

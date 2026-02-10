@@ -52,6 +52,36 @@ SessionFactory = sessionmaker(
 )
 
 
+def _column_exists_sqlite(connection, table_name: str, column_name: str) -> bool:
+    """Return True when a SQLite table already contains the given column."""
+    rows = connection.exec_driver_sql(
+        f"PRAGMA table_info('{table_name}')"
+    ).fetchall()
+    return any(row[1] == column_name for row in rows)
+
+
+def _apply_sqlite_migrations() -> None:
+    """Apply lightweight SQLite schema migrations for legacy local databases."""
+    if not settings.DATABASE_URL.startswith("sqlite"):
+        return
+
+    with engine.begin() as connection:
+        if not _column_exists_sqlite(connection, "analysis", "status"):
+            connection.exec_driver_sql(
+                "ALTER TABLE analysis ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'"
+            )
+            connection.exec_driver_sql(
+                "UPDATE analysis SET status = 'completed' WHERE status IS NULL OR status = ''"
+            )
+            logger.info("Applied SQLite migration: analysis.status")
+
+        if not _column_exists_sqlite(connection, "overall_metrics", "warnings"):
+            connection.exec_driver_sql(
+                "ALTER TABLE overall_metrics ADD COLUMN warnings TEXT"
+            )
+            logger.info("Applied SQLite migration: overall_metrics.warnings")
+
+
 def _insert_default_settings(session: Session) -> None:
     """Seed the user_settings table with default values if empty."""
     existing = session.query(UserSettings).first()
@@ -76,6 +106,7 @@ def init_db() -> None:
     """
     _ensure_db_directory()
     Base.metadata.create_all(bind=engine)
+    _apply_sqlite_migrations()
     logger.info("Database tables created / verified")
 
     with SessionFactory() as session:

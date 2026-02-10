@@ -2,10 +2,11 @@
   "name": "audio-mastering-tool",
   "version": "0.1.0",
   "description": "Audio Mastering Tool - Electron + React + TypeScript frontend",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
+    "predev": "npm run build:electron",
     "dev:vite": "vite --port 5173",
-    "dev:electron": "tsc -p tsconfig.node.json && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron dist-electron/main.js",
+    "dev:electron": "cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron dist-electron/electron/main.js",
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "build:renderer": "vite build",
     "build:electron": "tsc -p tsconfig.node.json",

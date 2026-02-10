@@ -4,6 +4,7 @@ Audio Loader Module
 Loads and validates WAV files, extracting audio samples and metadata.
 Supports 44.1/48 kHz sample rates, 16/24-bit depth, and mono/stereo files.
 Stereo files are automatically converted to mono by averaging channels.
+Includes edge case detection for silence, clipping, and DC offset.
 """
 
 import logging
@@ -22,6 +23,58 @@ SUPPORTED_SUBTYPES = {
     "PCM_16": 16,
     "PCM_24": 24,
 }
+
+
+def detect_silence(samples: np.ndarray) -> bool:
+    """Detect if audio is essentially silent.
+
+    Args:
+        samples: Audio samples as float array.
+
+    Returns:
+        True if RMS is below -120 dBFS threshold.
+    """
+    rms = np.sqrt(np.mean(samples ** 2))
+    return rms < 1e-6
+
+
+def detect_clipping(samples: np.ndarray) -> bool:
+    """Detect if audio contains clipping.
+
+    Args:
+        samples: Audio samples as float array.
+
+    Returns:
+        True if max absolute sample exceeds -0.1 dBFS (0.99).
+    """
+    max_sample = np.max(np.abs(samples))
+    return max_sample > 0.99
+
+
+def detect_dc_offset(samples: np.ndarray) -> tuple[bool, float]:
+    """Detect significant DC offset in audio.
+
+    Args:
+        samples: Audio samples as float array.
+
+    Returns:
+        Tuple of (has_offset, mean_value). has_offset is True
+        if abs(mean) > 0.01.
+    """
+    mean = float(np.mean(samples))
+    return (abs(mean) > 0.01, mean)
+
+
+def remove_dc_offset(samples: np.ndarray) -> np.ndarray:
+    """Remove DC offset by subtracting the mean.
+
+    Args:
+        samples: Audio samples as float array.
+
+    Returns:
+        Samples with DC offset removed.
+    """
+    return samples - np.mean(samples)
 
 
 class AudioLoader:
@@ -96,12 +149,31 @@ class AudioLoader:
         except sf.LibsndfileError as exc:
             raise ValueError(f"Error reading audio data: {exc}") from exc
 
-        # Convert stereo to mono by averaging channels
+        # Preserve untouched stereo frames before mono conversion
+        stereo_samples: np.ndarray | None = None
         if samples.ndim == 2:
+            stereo_samples = samples.astype(np.float32)
+            # Convert stereo to mono by averaging channels
             samples = np.mean(samples, axis=1)
 
         # Normalize to float32 in [-1.0, 1.0]
         samples = samples.astype(np.float32)
+
+        # Edge case detection
+        if detect_silence(samples):
+            logger.warning("File appears to be silent (RMS < -120 dBFS): %s", file_path)
+
+        if detect_clipping(samples):
+            logger.warning("File contains clipping (true peak > -0.1 dBFS): %s", file_path)
+
+        has_dc_offset, dc_mean = detect_dc_offset(samples)
+        if has_dc_offset:
+            logger.warning(
+                "DC offset detected (mean=%.6f) in %s — removing automatically",
+                dc_mean,
+                file_path,
+            )
+            samples = remove_dc_offset(samples)
 
         duration = len(samples) / sample_rate
 
@@ -121,6 +193,9 @@ class AudioLoader:
             duration=duration,
             channels=original_channels,
             file_path=file_path,
+            stereo_samples=stereo_samples,
+            dc_offset_detected=has_dc_offset,
+            dc_offset_mean=dc_mean,
         )
 
     def validate_file(self, file_path: str) -> bool:

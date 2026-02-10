@@ -144,7 +144,10 @@ class TestReferenceRepository:
         assert track.is_builtin is False
         assert track.track_name == "User Track"
 
-    def test_search_by_similarity_stub(self, session):
+    def test_search_by_similarity_empty(self, session):
+        import numpy as np
         repo = ReferenceRepository(session)
-        results = repo.search_by_similarity(b"\x00\x01\x02")
+        user_vector = np.ones(128, dtype=np.float32)
+        user_vector = user_vector / np.linalg.norm(user_vector)
+        results = repo.search_by_similarity(user_vector)
         assert results == []
